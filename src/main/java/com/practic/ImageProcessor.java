@@ -15,90 +15,82 @@ import java.util.Arrays;
 
 public class ImageProcessor extends JFrame {
   private BufferedImage originalImage;
-  private BufferedImage processedImage;
-  private JLabel imageLabel;
+  private BufferedImage currentImage;
+  private JLabel imageDisplayLabel;
 
   public ImageProcessor() {
-    imageLabel = new JLabel(); // Инициализация imageLabel
-    add(imageLabel); // Добавление imageLabel в JFrame
-    // Загрузка и отображение изображения
-    selectImage();
+    imageDisplayLabel = new JLabel();
+    add(imageDisplayLabel);
+    loadImage();
 
-    // Создание меню
     createMenu();
 
-    // Настройка окна приложения
-    setupWindow();
+    configureWindow();
   }
 
-  private BufferedImage deepCopy(BufferedImage bi) {
-    ColorModel cm = bi.getColorModel();
-    boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-    WritableRaster raster = bi.copyData(null);
-    return new BufferedImage(cm, raster, isAlphaPremultiplied, null);
+  private BufferedImage cloneImage(BufferedImage image) {
+    ColorModel colorModel = image.getColorModel();
+    boolean isAlphaPremultiplied = colorModel.isAlphaPremultiplied();
+    WritableRaster raster = image.copyData(null);
+    return new BufferedImage(colorModel, raster, isAlphaPremultiplied, null);
   }
 
-  private void selectImage() {
-    // Предложение пользователю выбрать изображение или использовать изображение по умолчанию
+  private void loadImage() {
     Object[] options = {"Выбрать изображение", "Использовать изображение по умолчанию"};
     int choice =
-        JOptionPane.showOptionDialog(
-            this,
-            "Хотите выбрать изображение с компьютера или использовать изображение по умолчанию?",
-            "Выбор изображения",
-            JOptionPane.YES_NO_CANCEL_OPTION,
-            JOptionPane.QUESTION_MESSAGE,
-            null,
-            options,
-            options[0]);
+            JOptionPane.showOptionDialog(
+                    this,
+                    "Хотите выбрать изображение с компьютера или использовать изображение по умолчанию?",
+                    "Выбор изображения",
+                    JOptionPane.YES_NO_CANCEL_OPTION,
+                    JOptionPane.QUESTION_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
 
     if (choice == JOptionPane.YES_OPTION) {
-      // Пользователь выбрал загрузку изображения с компьютера
       JFileChooser fileChooser = new JFileChooser();
       fileChooser.setDialogTitle("Выберите изображение");
       fileChooser.setAcceptAllFileFilterUsed(false);
       fileChooser.addChoosableFileFilter(
-          new FileNameExtensionFilter("Image files", "jpg", "png", "gif", "bmp"));
+              new FileNameExtensionFilter("Image files", "jpg", "png", "gif", "bmp"));
 
       int result = fileChooser.showOpenDialog(this);
       if (result == JFileChooser.APPROVE_OPTION) {
         File file = fileChooser.getSelectedFile();
         try {
           originalImage = ImageIO.read(file);
-          processedImage = deepCopy(originalImage);
-          imageLabel.setIcon(new ImageIcon(processedImage));
-          pack(); // Обновить размер окна в соответствии с новым изображением
+          currentImage = cloneImage(originalImage);
+          imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+          pack();
         } catch (IOException e) {
           JOptionPane.showMessageDialog(
-              this,
-              "Не удалось загрузить изображение: " + e.getMessage(),
-              "Ошибка",
-              JOptionPane.ERROR_MESSAGE);
+                  this,
+                  "Не удалось загрузить изображение: " + e.getMessage(),
+                  "Ошибка",
+                  JOptionPane.ERROR_MESSAGE);
         }
       }
     } else if (choice == JOptionPane.NO_OPTION) {
-      // Пользователь выбрал использование изображения по умолчанию
       try {
-        // Загрузка изображения по умолчанию из ресурсов приложения
         originalImage = ImageIO.read(getClass().getResource("/image.png"));
-        processedImage = deepCopy(originalImage);
-        imageLabel.setIcon(new ImageIcon(processedImage));
-        pack(); // Обновите размер окна в соответствии с изображением по умолчанию
+        currentImage = cloneImage(originalImage);
+        imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+        pack();
       } catch (IOException e) {
         JOptionPane.showMessageDialog(
-            this,
-            "Не удалось загрузить изображение по умолчанию: " + e.getMessage(),
-            "Ошибка",
-            JOptionPane.ERROR_MESSAGE);
+                this,
+                "Не удалось загрузить изображение по умолчанию: " + e.getMessage(),
+                "Ошибка",
+                JOptionPane.ERROR_MESSAGE);
       }
     } else {
-      // Пользователь закрыл диалоговое окно
       JOptionPane.showMessageDialog(
-          this,
-          "Не выбрано изображение. Приложение будет закрыто.",
-          "Закрытие приложения",
-          JOptionPane.INFORMATION_MESSAGE);
-      System.exit(0); // Закрыть приложение
+              this,
+              "Не выбрано изображение. Приложение будет закрыто.",
+              "Закрытие приложения",
+              JOptionPane.INFORMATION_MESSAGE);
+      System.exit(0);
     }
     if (originalImage == null) {
       closeApplication();
@@ -107,10 +99,10 @@ public class ImageProcessor extends JFrame {
 
   private void closeApplication() {
     JOptionPane.showMessageDialog(
-        this,
-        "Не выбрано изображение. Приложение будет закрыто.",
-        "Закрытие приложения",
-        JOptionPane.INFORMATION_MESSAGE);
+            this,
+            "Не выбрано изображение. Приложение будет закрыто.",
+            "Закрытие приложения",
+            JOptionPane.INFORMATION_MESSAGE);
     System.exit(0);
   }
 
@@ -119,30 +111,29 @@ public class ImageProcessor extends JFrame {
     JMenu menu = new JMenu("Опции");
     menuBar.add(menu);
 
-    // Добавление пунктов меню
-    addMenuItem(menu, "Выбрать канал", e -> chooseChannel());
-    addMenuItem(menu, "Переключить оттенки серого", e -> toggleGrayscale());
-    addMenuItem(menu, "Обрезать изображение", e -> cropImage());
-    addMenuItem(menu, "Повысить яркость", e -> increaseBrightness());
-    addMenuItem(menu, "Нарисовать круг", e -> drawCircle());
-    addMenuItem(menu, "Сбросить изменения", e -> resetChanges());
-    addMenuItem(menu, "Выбрать изображение", e -> selectImage());
+    addMenuItem(menu, "Выбрать канал", e -> selectColorChannel());
+    addMenuItem(menu, "Переключить оттенки серого", e -> convertToGrayscale());
+    addMenuItem(menu, "Повысить яркость", e -> adjustBrightness());
+    addMenuItem(menu, "Показать негативное изображение", e -> displayNegativeImage());
+    addMenuItem(menu, "Усреднение изображения", e -> applyAverageFilter());
+    addMenuItem(menu, "Нарисовать прямоугольник", e -> drawRectangleOnImage());
+    addMenuItem(menu, "Сбросить изменения", e -> resetImageChanges());
+    addMenuItem(menu, "Выбрать изображение", e -> loadImage());
 
     setJMenuBar(menuBar);
   }
 
-  private void setupWindow() {
-    // Загрузка иконки
+  private void configureWindow() {
     try {
       Image icon = ImageIO.read(getClass().getResource("/icon.jpg"));
       setIconImage(icon);
     } catch (IOException e) {
       e.printStackTrace();
       JOptionPane.showMessageDialog(
-          this,
-          "Не удалось загрузить иконку: " + e.getMessage(),
-          "Ошибка",
-          JOptionPane.ERROR_MESSAGE);
+              this,
+              "Не удалось загрузить иконку: " + e.getMessage(),
+              "Ошибка",
+              JOptionPane.ERROR_MESSAGE);
     }
 
     setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -156,80 +147,171 @@ public class ImageProcessor extends JFrame {
     menu.add(menuItem);
   }
 
-  private void showChannel(Color channelColor) {
-    int width = processedImage.getWidth();
-    int height = processedImage.getHeight();
+  private void displayColorChannel(Color channelColor) {
+    int width = currentImage.getWidth();
+    int height = currentImage.getHeight();
     BufferedImage channelImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
     for (int x = 0; x < width; x++) {
       for (int y = 0; y < height; y++) {
-        int rgb = processedImage.getRGB(x, y);
+        int rgb = currentImage.getRGB(x, y);
         int channel =
-            channelColor.equals(Color.RED)
-                ? (rgb >> 16) & 0xff
-                : channelColor.equals(Color.GREEN)
-                    ? (rgb >> 8) & 0xff
-                    : channelColor.equals(Color.BLUE) ? rgb & 0xff : 0;
+                channelColor.equals(Color.RED)
+                        ? (rgb >> 16) & 0xff
+                        : channelColor.equals(Color.GREEN)
+                        ? (rgb >> 8) & 0xff
+                        : channelColor.equals(Color.BLUE) ? rgb & 0xff : 0;
         channelImage.setRGB(x, y, (255 << 24) | (channel << 16) | (channel << 8) | channel);
       }
     }
 
-    imageLabel.setIcon(new ImageIcon(channelImage));
-    imageLabel.repaint();
+    imageDisplayLabel.setIcon(new ImageIcon(channelImage));
+    imageDisplayLabel.repaint();
   }
 
-  // Метод для выбора цветового канала
-  private void chooseChannel() {
+  private void selectColorChannel() {
     String[] options = {"Красный", "Зеленый", "Синий"};
     int choice =
-        JOptionPane.showOptionDialog(
-            this,
-            "Выберите канал:",
-            "Выбор канала",
-            JOptionPane.DEFAULT_OPTION,
-            JOptionPane.INFORMATION_MESSAGE,
-            null,
-            options,
-            options[0]);
+            JOptionPane.showOptionDialog(
+                    this,
+                    "Выберите канал:",
+                    "Выбор канала",
+                    JOptionPane.DEFAULT_OPTION,
+                    JOptionPane.INFORMATION_MESSAGE,
+                    null,
+                    options,
+                    options[0]);
 
     switch (choice) {
-      case 0: // Красный
-        showChannel(Color.RED);
+      case 0:
+        displayColorChannel(Color.RED);
         break;
-      case 1: // Зеленый
-        showChannel(Color.GREEN);
+      case 1:
+        displayColorChannel(Color.GREEN);
         break;
-      case 2: // Синий
-        showChannel(Color.BLUE);
+      case 2:
+        displayColorChannel(Color.BLUE);
         break;
       default:
-        // Ничего не делаем, если пользователь закрыл диалоговое окно
     }
   }
 
-  // Метод для переключения в оттенки серого
-  private void toggleGrayscale() {
-    for (int x = 0; x < processedImage.getWidth(); x++) {
-      for (int y = 0; y < processedImage.getHeight(); y++) {
+  private void convertToGrayscale() {
+    for (int x = 0; x < currentImage.getWidth(); x++) {
+      for (int y = 0; y < currentImage.getHeight(); y++) {
         Color originalColor = new Color(originalImage.getRGB(x, y));
         int grayLevel =
-            (int)
-                (originalColor.getRed() * 0.299
-                    + originalColor.getGreen() * 0.587
-                    + originalColor.getBlue() * 0.114);
+                (int)
+                        (originalColor.getRed() * 0.299
+                                + originalColor.getGreen() * 0.587
+                                + originalColor.getBlue() * 0.114);
         Color grayColor = new Color(grayLevel, grayLevel, grayLevel);
-        processedImage.setRGB(x, y, grayColor.getRGB());
+        currentImage.setRGB(x, y, grayColor.getRGB());
       }
     }
-    imageLabel.setIcon(new ImageIcon(processedImage));
+    imageDisplayLabel.setIcon(new ImageIcon(currentImage));
   }
 
-  // Метод для обрезки изображения
-  private void cropImage() {
+  private void adjustBrightness() {
     try {
       String input =
-          JOptionPane.showInputDialog(
-              this, "Введите координаты x, y и размеры обрезки width, height через запятую:");
+              JOptionPane.showInputDialog(
+                      this, "Введите значение для увеличения яркости (например, 1.5):");
+      if (input != null && !input.isEmpty()) {
+        float scaleFactor = Float.parseFloat(input);
+
+        if (scaleFactor >= 1.1) {
+          float[] scales = new float[currentImage.getColorModel().getNumComponents()];
+          float[] offsets = new float[currentImage.getColorModel().getNumComponents()];
+          Arrays.fill(scales, scaleFactor);
+          Arrays.fill(offsets, 0);
+
+          RescaleOp op = new RescaleOp(scales, offsets, null);
+          currentImage = op.filter(currentImage, null);
+          imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+          imageDisplayLabel.repaint();
+        } else {
+          JOptionPane.showMessageDialog(
+                  this,
+                  "Фактор увеличения яркости должен быть больше или равен 1.1.",
+                  "Ошибка",
+                  JOptionPane.ERROR_MESSAGE);
+        }
+      }
+    } catch (Exception e) {
+      JOptionPane.showMessageDialog(
+              this,
+              "Ошибка при увеличении яркости: " + e.getMessage(),
+              "Ошибка",
+              JOptionPane.ERROR_MESSAGE);
+    }
+  }
+
+  private void resetImageChanges() {
+    currentImage = cloneImage(originalImage);
+    imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+    imageDisplayLabel.repaint();
+  }
+
+  private void displayNegativeImage() {
+    int width = currentImage.getWidth();
+    int height = currentImage.getHeight();
+    for (int x = 0; x < width; x++) {
+      for (int y = 0; y < height; y++) {
+        int rgb = currentImage.getRGB(x, y);
+        Color color = new Color(rgb, true);
+        Color negative = new Color(255 - color.getRed(), 255 - color.getGreen(), 255 - color.getBlue());
+        currentImage.setRGB(x, y, negative.getRGB());
+      }
+    }
+    imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+    imageDisplayLabel.repaint();
+  }
+
+  private void applyAverageFilter() {
+    String input = JOptionPane.showInputDialog(this, "Введите размер ядра (например, 3):");
+    if (input != null && !input.isEmpty()) {
+      try {
+        int kernelSize = Integer.parseInt(input.trim());
+        if (kernelSize > 1) {
+          BufferedImage newImage = new BufferedImage(currentImage.getWidth(), currentImage.getHeight(), currentImage.getType());
+          for (int x = 0; x < currentImage.getWidth(); x++) {
+            for (int y = 0; y < currentImage.getHeight(); y++) {
+              int red = 0, green = 0, blue = 0;
+              int count = 0;
+              for (int i = -kernelSize / 2; i <= kernelSize / 2; i++) {
+                for (int j = -kernelSize / 2; j <= kernelSize / 2; j++) {
+                  int newX = x + i;
+                  int newY = y + j;
+                  if (newX >= 0 && newX < currentImage.getWidth() && newY >= 0 && newY < currentImage.getHeight()) {
+                    Color color = new Color(currentImage.getRGB(newX, newY));
+                    red += color.getRed();
+                    green += color.getGreen();
+                    blue += color.getBlue();
+                    count++;
+                  }
+                }
+              }
+              newImage.setRGB(x, y, new Color(red / count, green / count, blue / count).getRGB());
+            }
+          }
+          currentImage = newImage;
+          imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+          imageDisplayLabel.repaint();
+        } else {
+          JOptionPane.showMessageDialog(this, "Размер ядра должен быть больше 1.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+        }
+      } catch (NumberFormatException e) {
+        JOptionPane.showMessageDialog(this, "Некорректный формат ввода.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+      }
+    }
+  }
+
+  private void drawRectangleOnImage() {
+    try {
+      String input =
+              JOptionPane.showInputDialog(
+                      this, "Введите координаты верхнего левого угла x, y и размеры width, height через запятую:");
       if (input != null && !input.isEmpty()) {
         String[] parts = input.split(",");
         int x = Integer.parseInt(parts[0].trim());
@@ -237,108 +319,30 @@ public class ImageProcessor extends JFrame {
         int width = Integer.parseInt(parts[2].trim());
         int height = Integer.parseInt(parts[3].trim());
 
-        // Проверка, что координаты и размеры находятся в пределах изображения
         if (x >= 0
-            && y >= 0
-            && width > 0
-            && height > 0
-            && x + width <= processedImage.getWidth()
-            && y + height <= processedImage.getHeight()) {
-          processedImage = processedImage.getSubimage(x, y, width, height);
-          imageLabel.setIcon(new ImageIcon(processedImage));
-          imageLabel.repaint(); // Обновление отображения
-        } else {
-          JOptionPane.showMessageDialog(
-              this,
-              "Некорректные координаты или размеры обрезки.",
-              "Ошибка",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    } catch (NumberFormatException e) {
-      JOptionPane.showMessageDialog(
-          this, "Некорректный формат ввода.", "Ошибка", JOptionPane.ERROR_MESSAGE);
-    }
-  }
-
-  // Метод для увеличения яркости
-  private void increaseBrightness() {
-    try {
-      String input =
-          JOptionPane.showInputDialog(
-              this, "Введите значение для увеличения яркости (например, 1.5):");
-      if (input != null && !input.isEmpty()) {
-        float scaleFactor = Float.parseFloat(input);
-
-        if (scaleFactor >= 1.1) {
-          // Проверка типа изображения и настройка массивов для RescaleOp
-          float[] scales = new float[processedImage.getColorModel().getNumComponents()];
-          float[] offsets = new float[processedImage.getColorModel().getNumComponents()];
-          Arrays.fill(scales, scaleFactor);
-          Arrays.fill(offsets, 0);
-
-          RescaleOp op = new RescaleOp(scales, offsets, null);
-          processedImage = op.filter(processedImage, null);
-          imageLabel.setIcon(new ImageIcon(processedImage));
-          imageLabel.repaint();
-        } else {
-          JOptionPane.showMessageDialog(
-              this,
-              "Фактор увеличения яркости должен быть больше или равен 1.1.",
-              "Ошибка",
-              JOptionPane.ERROR_MESSAGE);
-        }
-      }
-    } catch (Exception e) {
-      JOptionPane.showMessageDialog(
-          this,
-          "Ошибка при увеличении яркости: " + e.getMessage(),
-          "Ошибка",
-          JOptionPane.ERROR_MESSAGE);
-    }
-  }
-
-  // Метод для рисования круга
-  private void drawCircle() {
-    try {
-      String input =
-          JOptionPane.showInputDialog(
-              this, "Введите координаты центра круга x, y и радиус через запятую:");
-      if (input != null && !input.isEmpty()) {
-        String[] parts = input.split(",");
-        int x = Integer.parseInt(parts[0].trim());
-        int y = Integer.parseInt(parts[1].trim());
-        int radius = Integer.parseInt(parts[2].trim());
-
-        // Проверка, что координаты центра и радиус находятся в пределах изображения
-        if (x - radius >= 0
-            && y - radius >= 0
-            && x + radius <= processedImage.getWidth()
-            && y + radius <= processedImage.getHeight()) {
-          Graphics2D g2d = processedImage.createGraphics();
-          g2d.setColor(Color.RED);
-          g2d.drawOval(x - radius, y - radius, radius * 2, radius * 2);
+                && y >= 0
+                && width > 0
+                && height > 0
+                && x + width <= currentImage.getWidth()
+                && y + height <= currentImage.getHeight()) {
+          Graphics2D g2d = currentImage.createGraphics();
+          g2d.setColor(Color.BLUE);
+          g2d.drawRect(x, y, width, height);
           g2d.dispose();
-          imageLabel.setIcon(new ImageIcon(processedImage));
+          imageDisplayLabel.setIcon(new ImageIcon(currentImage));
+          imageDisplayLabel.repaint();
         } else {
           JOptionPane.showMessageDialog(
-              this,
-              "Некорректные координаты центра или радиус.",
-              "Ошибка",
-              JOptionPane.ERROR_MESSAGE);
+                  this,
+                  "Некорректные координаты или размеры прямоугольника.",
+                  "Ошибка",
+                  JOptionPane.ERROR_MESSAGE);
         }
       }
     } catch (NumberFormatException e) {
       JOptionPane.showMessageDialog(
-          this, "Некорректный формат ввода.", "Ошибка", JOptionPane.ERROR_MESSAGE);
+              this, "Некорректный формат ввода.", "Ошибка", JOptionPane.ERROR_MESSAGE);
     }
-  }
-
-  // Метод для сброса изменений
-  private void resetChanges() {
-    processedImage = deepCopy(originalImage);
-    imageLabel.setIcon(new ImageIcon(processedImage));
-    imageLabel.repaint();
   }
 
   public static void main(String[] args) {
